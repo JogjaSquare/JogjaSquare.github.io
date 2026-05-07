@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rainbow Friends: The Technician's Revenge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="overlay">
+        <div class="menu-content">
+            <h1 class="glitch" data-text="RAINBOW FRIENDS">RAINBOW FRIENDS</h1>
+            <p class="subtitle">CHAPTER 1: THE ODD WORLD</p>
+            <div class="menu-actions">
+                <button id="start-btn">MULAI PERMAINAN</button>
+            </div>
+            <p class="hint">Gunakan BOX untuk bersembunyi dari Blue!</p>
+        </div>
+    </div>
+
+    <div id="dialogue-container">
+        <div class="dialogue-box">
+            <div class="char-portrait"></div>
+            <div class="text-wrapper">
+                <b id="speaker-name">RED</b>
+                <p id="message">Mempersiapkan sistem...</p>
+            </div>
+            <div class="blink-text">TAP UNTUK LANJUT >></div>
+        </div>
+    </div>
+
+    <div id="jumpscare">
+        <div class="blood-overlay"></div>
+        <div class="scare-content">
+            <h1 id="scare-text">TERTANGKAP!</h1>
+            <p>Blue telah menemukanmu...</p>
+        </div>
+    </div>
+
+    <div id="hud">
+        <div class="status-panel">
+            <div class="chapter-tag" id="info-ch">CHAPTER 1</div>
+            <div class="task-tag" id="info-task">MENCARI BLOK</div>
+            <div class="progress-wrapper">
+                <span id="info-progress">ITEM: 0 / 5</span>
+            </div>
+        </div>
+
+        <div class="stamina-wrapper">
+            <label>STAMINA</label>
+            <div class="stamina-bar">
+                <div id="stamina-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="joystick-base">
+        <div id="joystick-knob"></div>
+    </div>
+
+    <div class="action-btns">
+        <button id="btn-run" class="game-btn">LARI</button>
+        <button id="btn-box" class="game-btn">PAKAI BOX</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="script.js"></script>
+</body>
+</html>
