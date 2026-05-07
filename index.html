@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rainbow Friends - FIXED 100%</title>
+    <style>
+        body { margin: 0; background: #222; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        canvas { display: block; background: #000; }
+        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        button { padding: 25px 50px; font-size: 24px; background: #ff0000; color: #fff; border: none; font-weight: bold; border-radius: 15px; box-shadow: 0 5px 15px rgba(255,0,0,0.4); }
+        #diag { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; background: #002244; border: 4px solid #00aaff; border-radius: 15px; padding: 20px; display: none; z-index: 500; }
+        .hud { position: absolute; top: 15px; left: 15px; pointer-events: none; z-index: 100; }
+        .stat-box { background: rgba(0,0,0,0.8); border-left: 6px solid #ff0000; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+        #joy-base { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; }
+        #joy-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: #fff; border-radius: 50%; opacity: 0.6; }
+        .side-btns { position: absolute; bottom: 40px; right: 30px; display: flex; flex-direction: column; gap: 15px; }
+        .ctrl-btn { width: 75px; height: 75px; background: rgba(255,255,255,0.1); border: 3px solid #fff; border-radius: 50%; color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div id="overlay"><button id="btn-start">MASUK KE GAME</button></div>
+
+<div id="diag">
+    <strong id="speaker" style="color:#00aaff; font-size: 20px;">SISTEM</strong>
+    <p id="msg-text" style="font-size: 16px; margin: 10px 0;"></p>
+    <div style="color:#0f0; text-align:right; font-size: 12px;">KLIK UNTUK LANJUT >></div>
+</div>
+
+<div class="hud">
+    <div class="stat-box">
+        <div id="ch-title" style="color:#00aaff; font-size: 12px;">CHAPTER 1</div>
+        <div id="task-name" style="font-size: 20px; font-weight: bold; color: #ffff00;">CARI BLOK</div>
+        <div id="count-txt" style="font-size: 18px;">DAPAT: 0 / 5</div>
+    </div>
+</div>
+
+<div id="joy-base"><div id="joy-stick"></div></div>
+<div class="side-btns">
+    <div class="ctrl-btn" id="m-run">LARI</div>
+    <div class="ctrl-btn" id="m-box" style="border-color: #ff5500;">BOX</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const cvs = document.getElementById('gameCanvas');
+const ctx = cvs.getContext('2d');
+cvs.width = window.innerWidth;
+cvs.height = window.innerHeight;
+
+let isPlaying = false, currentLvl = -1;
+const input = { dx: 0, dy: 0, active: false };
+let runHold = false, boxHold = false;
+
+const levelData = [
+    { ch: 1, name: "RED", task: "Cari Blok", goal: 5, color: "#0066ff", msg: "Cari 5 blok biru yang tersebar di lantai ini!" },
+    { ch: 2, name: "TECHNICIAN", task: "Bola Lampu", goal: 8, color: "#ffff00", msg: "Bagus! Sekarang cari bola lampu kuning." }
+];
+
+class Player {
+    constructor() { this.x = 0; this.y = 0; this.score = 0; }
+    move() {
+        if(boxHold) return;
+        let speed = runHold ? 8 : 4;
+        this.x += input.dx * speed;
+        this.y += input.dy * speed;
+    }
+}
+
+const user = new Player();
+let items = [];
+
+function setupLevel() {
+    currentLvl++;
+    if(currentLvl >= levelData.length) { alert("KAMU MENANG!"); location.reload(); return; }
+    
+    isPlaying = false;
+    const data = levelData[currentLvl];
+    const box = document.getElementById('diag');
+    box.style.display = 'block';
+    document.getElementById('speaker').innerText = data.name;
+    document.getElementById('msg-text').innerText = data.msg;
+    
+    box.onclick = () => {
+        box.style.display = 'none';
+        user.x = 0; user.y = 0; user.score = 0;
+        // Spawn item di area yang dekat (biar kelihatan langsung)
+        items = Array.from({length: data.goal}, (_, i) => ({
+            x: (Math.random() - 0.5) * 1500 + (i * 100),
+            y: (Math.random() - 0.5) * 1500 + (i * 100),
+            status: true
+        }));
+        updateUI();
+        isPlaying = true;
+    };
+}
+
+function updateUI() {
+    const data = levelData[currentLvl];
+    document.getElementById('ch-title').innerText = "CHAPTER " + data.ch;
+    document.getElementById('task-name').innerText = data.task;
+    document.getElementById('count-txt').innerText = "DAPAT: " + user.score + " / " + data.goal;
+}
+
+function render() {
+    // Clear background
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+    if (isPlaying) {
+        user.move();
+        const offsetX = cvs.width/2 - user.x;
+        const offsetY = cvs.height/2 - user.y;
+
+        // GAMBAR LANTAI GRID (PENTING!)
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 2;
+        for(let x = -2000; x <= 2000; x += 150) {
+            ctx.beginPath(); ctx.moveTo(x + offsetX, -2000 + offsetY); ctx.lineTo(x + offsetX, 2000 + offsetY); ctx.stroke();
+        }
+        for(let y = -2000; y <= 2000; y += 150) {
+            ctx.beginPath(); ctx.moveTo(-2000 + offsetX, y + offsetY); ctx.lineTo(2000 + offsetX, y + offsetY); ctx.stroke();
+        }
+
+        // GAMBAR ITEM (BOX BESAR)
+        items.forEach(it => {
+            if(it.status) {
+                ctx.fillStyle = levelData[currentLvl].color;
+                ctx.fillRect(it.x + offsetX - 30, it.y + offsetY - 30, 60, 60);
+                // Cek Tabrakan
+                if(Math.hypot(user.x - it.x, user.y - it.y) < 60) {
+                    it.status = false;
+                    user.score++;
+                    updateUI();
+                    if(user.score >= levelData[currentLvl].goal) setupLevel();
+                }
+            }
+        });
+
+        // GAMBAR PLAYER (BOLA HIJAU)
+        ctx.fillStyle = boxHold ? "#884400" : "#00ff00";
+        ctx.beginPath();
+        ctx.arc(cvs.width/2, cvs.height/2, 25, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.stroke();
+    }
+
+    requestAnimationFrame(render);
+}
+
+// CONTROLS
+const jBase = document.getElementById('joy-base'), jStick = document.getElementById('joy-stick');
+jBase.addEventListener('touchstart', () => input.active = true);
+window.addEventListener('touchmove', e => {
+    if(!input.active) return;
+    const t = e.touches[0], r = jBase.getBoundingClientRect();
+    const x = t.clientX - (r.left + 60), y = t.clientY - (r.top + 60);
+    const d = Math.min(50, Math.hypot(x, y));
+    const ang = Math.atan2(y, x);
+    input.dx = Math.cos(ang) * (d/50);
+    input.dy = Math.sin(ang) * (d/50);
+    jStick.style.transform = `translate(${Math.cos(ang)*d}px, ${Math.sin(ang)*d}px)`;
+});
+window.addEventListener('touchend', () => {
+    input.active = false; input.dx = 0; input.dy = 0;
+    jStick.style.transform = "translate(0,0)";
+});
+
+document.getElementById('m-run').ontouchstart = (e) => { e.preventDefault(); runHold = true; };
+document.getElementById('m-run').ontouchend = () => runHold = false;
+document.getElementById('m-box').ontouchstart = (e) => { e.preventDefault(); boxHold = true; };
+document.getElementById('m-box').ontouchend = () => boxHold = false;
+
+document.getElementById('btn-start').onclick = () => {
+    document.getElementById('overlay').style.display = 'none';
+    setupLevel();
+};
+
+render();
+</script>
+</body>
+</html>
+
